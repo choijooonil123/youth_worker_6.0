@@ -48,6 +48,34 @@
 
     .blink{animation: blink 1s step-start 0s infinite}
     @keyframes blink{ 50%{ opacity: .2 } }
+
+    /* ======== [추가] 모바일 최적화 & 확대 스케일 ======== */
+    :root { --scale: 1; }                         /* 글자/버튼 전체 확대 배율 */
+    body { font-size: calc(16px * var(--scale)); }/* 기본 글꼴 크기 확대 */
+    .qbtn { 
+      font-size: calc(14px * var(--scale)); 
+      padding: calc(10px * var(--scale)) 12px; 
+      min-height: 44px;                           /* 터치 표준 */
+    }
+    .btn { min-height: 40px; }
+
+    @media (max-width: 480px){
+      header{ padding:12px 12px 6px }
+      header h1{ font-size: clamp(16px, 5vw, 18px) }
+      .wrap{ padding:8px 10px 24px }
+      .toolbar{ gap:6px; padding:10px; }
+      .toolbar .btn, .btn{ padding:12px 14px; min-height:44px; }
+      .counts .pill{ display:none; }              /* 상단 공간 절약 */
+
+      .grid{ gap:8px; padding:8px; grid-template-columns: 1fr; }
+      .qbtn{ font-size: clamp(14px, 4vw, 16px); padding:12px 14px; }
+
+      /* 모달을 모바일 풀스크린 */
+      dialog{ width:100vw; height:100dvh; max-width:none; border-radius:0; }
+      .dlg{ height:100%; overflow:auto; padding:12px; }
+      #extraInfo{ min-height:120px; }
+    }
+    /* ======== [추가 끝] ======== */
   </style>
 
   <!-- Firebase SDK (ESM) -->
@@ -143,6 +171,7 @@
     <div id="mainPanel" class="panel" style="display:none">
       <div class="toolbar">
         <button id="resetProgress" class="btn">초기화</button>
+        <button id="zoomBtn" class="btn">글자 크게</button><!-- [추가] 글자 크기 토글 -->
         <label for="subjectSelect" class="stat">과목 선택:</label>
         <select id="subjectSelect"></select>
         <div class="counts">
@@ -365,7 +394,6 @@
       const all = lsGet(LS_PROG, {});
       const prev = all[uid] || { learnedIds: [], clicks: {} };
       all[uid] = { learnedIds: prev.learnedIds || [], clicks: prev.clicks || {}, ...patch,
-                   // 병합 보장
                    learnedIds: patch.learnedIds ? Array.from(new Set(patch.learnedIds)) : (prev.learnedIds||[]),
                    clicks: { ...(prev.clicks||{}), ...(patch.clicks||{}) }
                  };
@@ -373,7 +401,6 @@
       return all[uid];
     }
     async function saveProgressForUser(uid, learnedIds){
-      // 기존 clicks 유지
       const prev = getLocalUserProgress(uid);
       const merged = setLocalUserProgress(uid, { learnedIds: learnedIds, clicks: prev.clicks||{} });
       if(window.__cloudReady){
@@ -627,18 +654,12 @@
 
     /* ================= 색상(클릭수 기반, 보색으로 변화) ================= */
     function styleFromCount(n){
-      // n이 많을수록 보색 쪽(Hue +180)으로 이동
       const t = Math.max(0, Math.min(1, n/10)); // 0..1 (10회에서 최대 변화)
       const baseHue = 230;           // 기본 파랑톤
-      const compHue = (baseHue + 180) % 360; // 보색 (230+180=410 → 50, 즉 주황톤)
-    
-      // 클릭 비율(t)에 따라 Hue를 보간
+      const compHue = (baseHue + 180) % 360; // 보색 (230+180=410 → 50, 주황톤)
       const hue = baseHue*(1-t) + compHue*t;
-    
-      // 채도/명도도 함께 변화시켜 더 선명하게
-      const sat = 40 + 30*t;  // 40% → 70%
-      const light = 22 + (20*t); // 22% → 42% (좀 더 밝게)
-    
+      const sat = 40 + 30*t;         // 40% → 70%
+      const light = 22 + (20*t);     // 22% → 42%
       const bg = `hsl(${hue}, ${sat}%, ${light}%)`;
       const border = `hsl(${hue}, ${sat+5}%, ${light-10}%)`;
       return { bg, border };
@@ -1257,6 +1278,21 @@
         importBtn.__bound=true;
       }
     });
+
+    /* ================= [추가] 글자 크기 토글 ================= */
+    (function(){
+      const btn = document.getElementById('zoomBtn');
+      if(!btn) return;
+      const steps = [1, 1.15, 1.3];   // 배율 단계
+      let i = 0;
+      const apply = () => {
+        document.documentElement.style.setProperty('--scale', steps[i]);
+        btn.textContent = (steps[i]===1) ? '글자 크게' : (steps[i]===1.15 ? '더 크게' : '기본 크기');
+      };
+      btn.addEventListener('click', ()=>{ i = (i+1) % steps.length; apply(); });
+      apply();
+    })();
+    /* ================= [추가 끝] ================= */
 
     /* ================= 관리자: 사용자 관리 ================= */
     async function openUserManage(){
