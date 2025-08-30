@@ -623,14 +623,22 @@
       }
     }
 
-    /* ================= 색상(클릭수 기반) ================= */
+    /* ================= 색상(클릭수 기반, 보색으로 변화) ================= */
     function styleFromCount(n){
-      // n이 많을수록 어두운 배경/진한 보더
-      const t = Math.max(0, Math.min(1, n/10)); // 0..1 (10회에서 최대)
-      const light = 22 - 10*t; // 22% -> 12%
-      const borderLight = 28 - 12*t; // 보더도 함께 어둡게
-      const bg = `hsl(230, 40%, ${light}%)`;
-      const border = `hsl(230, 45%, ${borderLight}%)`;
+      // n이 많을수록 보색 쪽(Hue +180)으로 이동
+      const t = Math.max(0, Math.min(1, n/10)); // 0..1 (10회에서 최대 변화)
+      const baseHue = 230;           // 기본 파랑톤
+      const compHue = (baseHue + 180) % 360; // 보색 (230+180=410 → 50, 즉 주황톤)
+    
+      // 클릭 비율(t)에 따라 Hue를 보간
+      const hue = baseHue*(1-t) + compHue*t;
+    
+      // 채도/명도도 함께 변화시켜 더 선명하게
+      const sat = 40 + 30*t;  // 40% → 70%
+      const light = 22 + (20*t); // 22% → 42% (좀 더 밝게)
+    
+      const bg = `hsl(${hue}, ${sat}%, ${light}%)`;
+      const border = `hsl(${hue}, ${sat+5}%, ${light-10}%)`;
       return { bg, border };
     }
 
