@@ -237,6 +237,51 @@
     </div>
   </dialog>
 
+  <!-- 새 질문 추가 다이얼로그 -->
+  <dialog id="addDlg">
+    <div class="dlg">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h2 style="margin:0">새 질문 추가</h2>
+        <button id="addDlgClose" class="btn danger">닫기</button>
+      </div>
+  
+      <div class="pill" id="addDlgSubjectPill" style="margin-bottom:8px"></div>
+  
+      <div>
+        <h3>질문</h3>
+        <textarea id="addQ" rows="3" placeholder="질문을 입력하세요. 예) 청소년 정책의 3대 축은?"></textarea>
+      </div>
+  
+      <div>
+        <h3>정답(모범답안)</h3>
+        <div id="addAnswersBox" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="row">
+          <button id="addAnsRowBtn" class="btn">➕ 정답 입력칸 추가</button>
+        </div>
+        <div class="pill" style="margin-top:6px">첫 번째 정답이 기본 활성 정답으로 저장됩니다.</div>
+      </div>
+  
+      <div>
+        <h3>추가설명</h3>
+        <textarea id="addExtra" rows="5" placeholder="핵심 요점, 배경지식, 예시 등을 적어두세요."></textarea>
+      </div>
+  
+      <div>
+        <h3>추가질문 및 답변</h3>
+        <div id="addFollowupsBox" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="row">
+          <button id="addFUrowBtn" class="btn">➕ 추가질문/답변 입력칸 추가</button>
+        </div>
+      </div>
+  
+      <div class="row" style="justify-content:flex-end">
+        <button id="addDlgSave" class="btn primary">✅ 저장</button>
+      </div>
+    </div>
+  </dialog>
+
+  
+
   <!-- 사용자 관리 모달(관리자 전용) -->
   <dialog id="userMngDlg">
     <div class="dlg">
