@@ -1172,6 +1172,7 @@
     };
 
     /* ================= 질문 추가/삭제(공유) ================= */
+    /*
     document.getElementById('addQuestionBtn').onclick = async ()=>{
       const subj=prompt('과목명을 입력하세요'); if(!subj) return;
       const ques=prompt('새 질문을 입력하세요'); if(!ques) return;
@@ -1194,6 +1195,10 @@
       await saveShared(current);
       await bootstrap();
     };
+    */
+
+    document.getElementById('addQuestionBtn').onclick = openAddDialog;
+    
     document.getElementById('deleteQuestionBtn').onclick = async ()=>{
       const q=raw.find(x=>x._idx===currentIdx); if(!q) return;
       if(!confirm('이 질문을 모든 사용자에게서 삭제하시겠습니까?')) return;
@@ -1343,6 +1348,152 @@
     document.getElementById('manageUsersBtn').addEventListener('click', openUserManage);
     document.getElementById('userMngClose').addEventListener('click', ()=> document.getElementById('userMngDlg').close());
 
+    /* ================= 새 질문 추가: 폼 다이얼로그 ================= */
+    function add_makeAnswerRow(value=''){
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.gap = '8px';
+      wrap.style.alignItems = 'center';
+    
+      const ta = document.createElement('textarea');
+      ta.rows = 2;
+      ta.placeholder = '정답(모범답안)을 입력하세요';
+      ta.style.flex = '1';
+      ta.value = value || '';
+    
+      const del = document.createElement('button');
+      del.className = 'btn danger';
+      del.textContent = '🗑';
+      del.onclick = () => wrap.remove();
+    
+      wrap.appendChild(ta);
+      wrap.appendChild(del);
+      return wrap;
+    }
+    function add_makeFUrow(qVal='', aVal=''){
+      const card = document.createElement('div');
+      card.style.border = '1px solid #1f2a55';
+      card.style.borderRadius = '10px';
+      card.style.padding = '8px';
+      card.style.display = 'flex';
+      card.style.flexDirection = 'column';
+      card.style.gap = '6px';
+    
+      const tq = document.createElement('textarea');
+      tq.rows = 2; tq.placeholder = '추가질문';
+      tq.value = qVal || '';
+    
+      const ta = document.createElement('textarea');
+      ta.rows = 2; ta.placeholder = '추가답변';
+      ta.value = aVal || '';
+    
+      const del = document.createElement('button');
+      del.className = 'btn danger';
+      del.textContent = '🗑 삭제';
+      del.style.alignSelf = 'flex-end';
+      del.onclick = () => card.remove();
+    
+      card.appendChild(tq);
+      card.appendChild(ta);
+      card.appendChild(del);
+      return card;
+    }
+    
+    function openAddDialog(){
+      const dlg = document.getElementById('addDlg');
+      const pill = document.getElementById('addDlgSubjectPill');
+      const subj = currentSubject();
+      pill.textContent = `과목: ${subj} (자동 설정)`;
+    
+      // 초기화
+      document.getElementById('addQ').value = '';
+      document.getElementById('addExtra').value = '';
+      const ansBox = document.getElementById('addAnswersBox');
+      ansBox.innerHTML = '';
+      ansBox.appendChild(add_makeAnswerRow()); // 최소 1칸
+      const fuBox = document.getElementById('addFollowupsBox');
+      fuBox.innerHTML = '';
+    
+      dlg.showModal();
+    }
+    function closeAddDialog(){ document.getElementById('addDlg').close(); }
+    
+    async function saveAddDialog(){
+      // 수집
+      const subj = currentSubject();
+      const q = (document.getElementById('addQ').value||'').trim();
+      const extra = (document.getElementById('addExtra').value||'').trim();
+    
+      if(!q){ alert('질문을 입력하세요.'); return; }
+    
+      const ansBox = document.getElementById('addAnswersBox');
+      const ansTexts = Array.from(ansBox.querySelectorAll('textarea'))
+        .map(t => (t.value||'').trim())
+        .filter(Boolean);
+    
+      if(ansTexts.length === 0){
+        alert('정답(모범답안)을 최소 1개 이상 입력하세요.');
+        return;
+      }
+    
+      const fuBox = document.getElementById('addFollowupsBox');
+      const fuCards = Array.from(fuBox.children);
+      const followups = fuCards.map(card => {
+        const [tq, ta] = card.querySelectorAll('textarea');
+        const qv = (tq.value||'').trim();
+        const av = (ta.value||'').trim();
+        return (qv && av) ? { q: qv, a: av } : null;
+      }).filter(Boolean);
+    
+      // 저장 레코드
+      const answers = ansTexts.map((t, idx) => ({
+        text: t,
+        ownerUid: currentUser?.uid || '',
+        ownerName: currentUser?.name || '',
+        createdAt: new Date().toISOString()
+      }));
+      const seed = {
+        subject: subj,
+        question: q,
+        answers,
+        active: 0,               // 첫 정답 활성
+        extraInfo: extra,
+        followups
+      };
+    
+      // 중복 체크
+      const id = `${subj}::${q}`;
+      if(raw.some(x=> `${normSubj(x.subject)}::${x.question}` === id)){
+        if(!confirm('이미 같은 질문이 있습니다. 그래도 추가하시겠습니까?')) return;
+      }
+    
+      try{
+        const current = await loadShared();
+        current.push(seed);
+        await saveShared(current);
+        await bootstrap();
+        closeAddDialog();
+        alert('저장되었습니다.');
+      }catch(e){
+        alert('저장 중 오류: ' + (e?.message||e));
+      }
+    }
+    
+    /* 버튼 바인딩 */
+    document.getElementById('addDlgClose').addEventListener('click', closeAddDialog);
+    document.getElementById('addDlgSave').addEventListener('click', saveAddDialog);
+    document.getElementById('addAnsRowBtn').addEventListener('click', ()=>{
+      document.getElementById('addAnswersBox').appendChild(add_makeAnswerRow());
+    });
+    document.getElementById('addFUrowBtn').addEventListener('click', ()=>{
+      document.getElementById('addFollowupsBox').appendChild(add_makeFUrow());
+    });
+
+
+    
+
+
+    
     /* ================= 부트스트랩 ================= */
     async function bootstrap(){
       const base=await loadBase();
